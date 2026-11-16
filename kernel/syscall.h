@@ -23,23 +23,23 @@
 #define SYS_sync   22
 // ---- Agent-OS 扩展（23-38），编号一经确定不再改动 ----
 // 任务一：Agent 进程与地址空间
-#define SYS_agent_create           23
-#define SYS_agent_info             24
+#define SYS_agent_create 23
+#define SYS_agent_info   24
 // 任务二：结构化交互接口
-#define SYS_tool_call              25
-#define SYS_tool_list              26
+#define SYS_tool_call 25
+#define SYS_tool_list 26
 // 任务三：上下文路径管理
-#define SYS_context_push           27
-#define SYS_context_query          28
-#define SYS_context_rollback       29
-#define SYS_context_clear          30
+#define SYS_context_push     27
+#define SYS_context_query    28
+#define SYS_context_rollback 29
+#define SYS_context_clear    30
 // 任务五：Agent Loop 机制
-#define SYS_agent_heartbeat_set    31
-#define SYS_agent_heartbeat_stop   32
-#define SYS_agent_watch            33
-#define SYS_agent_wait             34
-#define SYS_agent_unwatch          35
+#define SYS_agent_heartbeat_set  31
+#define SYS_agent_heartbeat_stop 32
+#define SYS_agent_watch          33
+#define SYS_agent_wait           34
+#define SYS_agent_unwatch        35
 // 任务四：文件系统属性扩展（加分项）
-#define SYS_file_setattr           36
-#define SYS_file_getattr           37
-#define SYS_file_query             38
+#define SYS_file_setattr 36
+#define SYS_file_getattr 37
+#define SYS_file_query   38
