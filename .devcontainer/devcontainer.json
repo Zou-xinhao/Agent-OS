@@ -1,0 +1,21 @@
+{
+  "name": "agent-os (xv6-riscv)",
+  "build": { "dockerfile": "../Dockerfile", "context": ".." },
+  "workspaceFolder": "/work",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "llvm-vs-code-extensions.vscode-clangd",
+        "ms-vscode.makefile-tools",
+        "bierner.markdown-mermaid",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "files.eol": "\n",
+        "editor.formatOnSave": false
+      }
+    }
+  },
+  "postCreateCommand": "bash scripts/check-env.sh || true"
+}

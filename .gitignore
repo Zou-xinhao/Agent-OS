@@ -1,0 +1,13 @@
+*.o
+*.d
+*.sym
+*.img
+kernel/kernel
+kernel/kernel.asm
+fs.img
+.gdb_history
+compile_commands.json
+.vscode/
+.idea/
+*.swp
+.DS_Store
