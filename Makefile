@@ -28,6 +28,8 @@ OBJS = \
   $K/sysfile.o \
   $K/kernelvec.o \
   $K/plic.o \
+  $K/agent_ctx.o \
+  $K/agent_tool.o \
   $K/virtio_disk.o
 
 # riscv64-linux-gnu- or riscv64-linux-gnu-
@@ -151,6 +153,7 @@ UPROGS=\
 	$U/_forphan\
 	$U/_dorphan\
 	$U/_sync\
+  $U/_t_stub\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

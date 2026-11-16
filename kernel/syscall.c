@@ -104,6 +104,24 @@ extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 extern uint64 sys_sync(void);
 
+// ---- Agent-OS 扩展 ----
+extern uint64 sys_agent_create(void);
+extern uint64 sys_agent_info(void);
+extern uint64 sys_tool_call(void);
+extern uint64 sys_tool_list(void);
+extern uint64 sys_context_push(void);
+extern uint64 sys_context_query(void);
+extern uint64 sys_context_rollback(void);
+extern uint64 sys_context_clear(void);
+extern uint64 sys_agent_heartbeat_set(void);
+extern uint64 sys_agent_heartbeat_stop(void);
+extern uint64 sys_agent_watch(void);
+extern uint64 sys_agent_wait(void);
+extern uint64 sys_agent_unwatch(void);
+extern uint64 sys_file_setattr(void);
+extern uint64 sys_file_getattr(void);
+extern uint64 sys_file_query(void);
+
 // An array mapping syscall numbers from syscall.h
 // to the function that handles the system call.
 static uint64 (*syscalls[])(void) = {
@@ -131,6 +149,22 @@ static uint64 (*syscalls[])(void) = {
   [SYS_close]   = sys_close,
   [SYS_sync]    = sys_sync,
   // clang-format on
+    [SYS_agent_create]         sys_agent_create,
+    [SYS_agent_info]           sys_agent_info,
+    [SYS_tool_call]            sys_tool_call,
+    [SYS_tool_list]            sys_tool_list,
+    [SYS_context_push]         sys_context_push,
+    [SYS_context_query]        sys_context_query,
+    [SYS_context_rollback]     sys_context_rollback,
+    [SYS_context_clear]        sys_context_clear,
+    [SYS_agent_heartbeat_set]  sys_agent_heartbeat_set,
+    [SYS_agent_heartbeat_stop] sys_agent_heartbeat_stop,
+    [SYS_agent_watch]          sys_agent_watch,
+    [SYS_agent_wait]           sys_agent_wait,
+    [SYS_agent_unwatch]        sys_agent_unwatch,
+    [SYS_file_setattr]         sys_file_setattr,
+    [SYS_file_getattr]         sys_file_getattr,
+    [SYS_file_query]           sys_file_query,
 };
 
 void

@@ -1,0 +1,38 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "detail": "make —— 只编译，不启动 QEMU",
+      "type": "shell",
+      "command": "make",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"],
+      "presentation": { "reveal": "silent", "clear": true, "panel": "shared" }
+    },
+    {
+      "label": "clean",
+      "detail": "make clean —— 改了头文件之后必须跑",
+      "type": "shell",
+      "command": "make clean",
+      "problemMatcher": [],
+      "presentation": { "reveal": "silent", "clear": true, "panel": "shared" }
+    },
+    {
+      "label": "run: qemu (3 核, 正常跑)",
+      "detail": "日常验证用这个；退出按 Ctrl+A 松手再按 X",
+      "type": "shell",
+      "command": "make qemu CPUS=3",
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "focus": true, "reveal": "always", "clear": true }
+    },
+    {
+      "label": "debug: qemu-gdb (1 核, 端口 26000)",
+      "detail": "启动后停在第一条指令等 gdb。然后按 F5 连接",
+      "type": "shell",
+      "command": "make qemu-gdb CPUS=1 GDBPORT=26000",
+      "problemMatcher": [],
+      "presentation": { "panel": "dedicated", "focus": true, "reveal": "always", "clear": true }
+    }
+  ]
+}

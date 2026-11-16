@@ -48,3 +48,21 @@ void printf(const char *, ...) __attribute__((format(printf, 1, 2)));
 // umalloc.c
 void *malloc(uint);
 void free(void *);
+
+// ---- Agent-OS 扩展 ----
+int agent_create(int type, int interval, unsigned long quota);
+int agent_info(int pid, void *info);
+int tool_call(void *req, int reqlen, void *resp, int resplen);
+int tool_list(char *buf, int buflen);
+int context_push(void *data, int len);
+int context_query(int idx, void *buf, int buflen);
+int context_rollback(int n);
+int context_clear(void);
+int agent_heartbeat_set(int interval);
+int agent_heartbeat_stop(void);
+int agent_watch(int event_id);
+int agent_wait(int timeout);
+int agent_unwatch(int watch_id);
+int file_setattr(const char *path, const char *key, const char *val);
+int file_getattr(const char *path, const char *key, char *buf, int len);
+int file_query(const char *key, const char *val, char *out, int outlen);

@@ -1,0 +1,22 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "xv6 内核（QEMU 端口 26000）",
+      "type": "cppdbg",
+      "request": "attach",
+      "program": "${workspaceFolder}/kernel/kernel",
+      "miDebuggerPath": "/usr/bin/gdb-multiarch",
+      "miDebuggerServerAddress": "localhost:26000",
+      "cwd": "${workspaceFolder}",
+      "MIMode": "gdb",
+      "externalConsole": false,
+      "setupCommands": [
+        { "description": "指定 RISC-V 64 位架构", "text": "set architecture riscv:rv64", "ignoreFailures": false },
+        { "description": "不要二次确认", "text": "set confirm off", "ignoreFailures": true },
+        { "description": "关闭分页", "text": "set pagination off", "ignoreFailures": true },
+        { "description": "单步时显示下一条指令", "text": "set disassemble-next-line on", "ignoreFailures": true }
+      ]
+    }
+  ]
+}

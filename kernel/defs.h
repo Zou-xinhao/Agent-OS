@@ -184,3 +184,24 @@ void            virtio_disk_intr(void);
 
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x) / sizeof((x)[0]))
+
+// ---- Agent-OS 扩展（apply-stubs.py 生成）----
+// agent_ctx.c （任务一 / 三 / 五，负责人 A）
+uint64 sys_agent_create(void);
+uint64 sys_agent_info(void);
+uint64 sys_context_push(void);
+uint64 sys_context_query(void);
+uint64 sys_context_rollback(void);
+uint64 sys_context_clear(void);
+uint64 sys_agent_heartbeat_set(void);
+uint64 sys_agent_heartbeat_stop(void);
+uint64 sys_agent_watch(void);
+uint64 sys_agent_wait(void);
+uint64 sys_agent_unwatch(void);
+
+// agent_tool.c （任务二 / 四，负责人 B）
+uint64 sys_tool_call(void);
+uint64 sys_tool_list(void);
+uint64 sys_file_setattr(void);
+uint64 sys_file_getattr(void);
+uint64 sys_file_query(void);

@@ -7,7 +7,17 @@ kernel/kernel.asm
 fs.img
 .gdb_history
 compile_commands.json
-.vscode/
+.vscode/*
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/settings.json
+!.vscode/c_cpp_properties.json
 .idea/
 *.swp
 .DS_Store
+# xv6 构建产物（上游 .gitignore 被覆盖时漏掉的）
+*.asm
+user/_*
+mkfs/mkfs
+.gdbinit
+user/usys.S

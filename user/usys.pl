@@ -43,3 +43,21 @@ entry("sbrk");
 entry("pause");
 entry("uptime");
 entry("sync");
+
+# ---- Agent-OS 扩展 ----
+entry("agent_create");
+entry("agent_info");
+entry("tool_call");
+entry("tool_list");
+entry("context_push");
+entry("context_query");
+entry("context_rollback");
+entry("context_clear");
+entry("agent_heartbeat_set");
+entry("agent_heartbeat_stop");
+entry("agent_watch");
+entry("agent_wait");
+entry("agent_unwatch");
+entry("file_setattr");
+entry("file_getattr");
+entry("file_query");
