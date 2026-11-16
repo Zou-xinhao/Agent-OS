@@ -1,0 +1,36 @@
+{
+  "files.eol": "\n",
+  "files.encoding": "utf8",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": false,
+  "editor.rulers": [100],
+  "editor.detectIndentation": false,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "[makefile]": {
+    "editor.insertSpaces": false,
+    "editor.tabSize": 8
+  },
+  "[c]": {
+    "editor.tabSize": 2
+  },
+  "files.associations": {
+    "*.h": "c"
+  },
+  "search.exclude": {
+    "**/*.o": true,
+    "**/*.d": true,
+    "**/*.asm": true,
+    "**/*.sym": true,
+    "kernel/kernel": true,
+    "fs.img": true
+  },
+  "files.watcherExclude": {
+    "**/*.o": true,
+    "kernel/kernel": true
+  },
+  "terminal.integrated.defaultProfile.linux": "bash",
+  "C_Cpp.default.cStandard": "c11",
+  "git.autofetch": true,
+  "git.autoStash": false
+}
