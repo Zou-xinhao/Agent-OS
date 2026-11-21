@@ -76,6 +76,23 @@ struct trapframe {
   /* 280 */ uint64 t6;
 };
 
+
+// ---- Agent 扩展（模块 A：内存与地址空间）----
+// Agent Loop 状态（任务五用，机制在 agent_ctx.c）
+enum agentloop { LOOP_IDLE = 0, LOOP_RUNNING, LOOP_WAITING, LOOP_STOPPED };
+
+// Context 区的记账元数据：唯一写者是 agent_mem.c。
+// 不变量：used == tail - head；count == 节点个数；
+//         head/tail/count 全为 0 <=> 区为空。
+struct ctx_meta {
+  uint64 base;      // Context 区起始用户虚拟地址
+  uint32 size;      // 区大小（字节，16 页 = 64 KiB）
+  uint32 used;      // 已用字节
+  uint32 head;      // 最老节点在区内的偏移
+  uint32 tail;      // 空闲区起点
+  uint32 count;     // 节点个数
+  uint32 evictions; // 累计淘汰节点数（观测用）
+};
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
 // Per-process state
@@ -101,4 +118,11 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+
+  // ---- Agent 扩展：赛题要求的 5 个 PCB 字段（模块 A）----
+  int agent_type;         // 0 = 普通进程；>0 = Agent 类型
+  int heartbeat_interval; // 心跳间隔（tick），0 = 未启用
+  uint64 resource_quota;  // 上下文配额（字节），<= AGENT_CTX_SIZE
+  int loop_state;         // enum agentloop
+  struct ctx_meta ctx;    // Context 区记账
 };

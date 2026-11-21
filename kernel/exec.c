@@ -34,6 +34,7 @@ kexec(char *path, char **argv)
   struct inode *ip;
   struct proghdr ph;
   pagetable_t pagetable = 0, oldpagetable;
+  int ctx_mapped = 0;
   struct proc *p = myproc();
 
   begin_op();
@@ -129,19 +130,34 @@ kexec(char *path, char **argv)
       last = s + 1;
   safestrcpy(p->name, last, sizeof(p->name));
 
+  // Agent 进程：Context 区在固定高位，新页表要重新映射一遍
+  if (p->agent_type != 0) {
+    if (agent_ctx_map(pagetable, AGENT_CTX_BASE) != 0)
+      goto bad;
+    ctx_mapped = 1;
+  }
+
   // Commit to the user image.
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
   p->trapframe->epc = elf.entry; // initial program counter = ulib.c:start()
   p->trapframe->sp = sp;         // initial stack pointer
+  if (p->agent_type != 0) {
+    // exec 换掉了整张页表：旧区 16 页归还，记账复位（新页表里已经映射好了）
+    agent_ctx_release(p, oldpagetable);
+    agent_ctx_reset(p);
+  }
   proc_freepagetable(oldpagetable, oldsz);
 
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
 bad:
-  if (pagetable)
+  if (pagetable) {
+    if (ctx_mapped)
+      uvmunmap(pagetable, AGENT_CTX_BASE, AGENT_CTX_PAGES, 1);
     proc_freepagetable(pagetable, sz);
+  }
   if (ip) {
     iunlockput(ip);
     end_op();
