@@ -29,6 +29,7 @@ OBJS = \
   $K/kernelvec.o \
   $K/plic.o \
   $K/agent_ctx.o \
+  $K/agent_mem.o \
   $K/agent_tool.o \
   $K/virtio_disk.o
 
@@ -154,6 +155,7 @@ UPROGS=\
 	$U/_dorphan\
 	$U/_sync\
   $U/_t_stub\
+  $U/_agent_demo\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

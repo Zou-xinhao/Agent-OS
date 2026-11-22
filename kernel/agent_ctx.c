@@ -1,10 +1,12 @@
 //
-// Agent 进程与上下文管理
-// 赛题：任务一（Agent 进程与地址空间）、任务三（上下文路径管理）、任务五（Agent Loop）
-// 负责人：A
+// Agent Loop（赛题任务五）
+// 负责人：A（机制）/ C（场景与验证）
 //
 // 当前状态：桩实现，全部返回 -1（未实现）。
 // 填实现时只替换函数体，不要改函数名与签名——B/C 的代码依赖这些符号。
+//
+// 注意：任务一（Agent 进程）与任务三的 Context 内存机制已经搬到 agent_mem.c，
+// 本文件只保留任务五的心跳与事件接口，避免两个模块抢同一个文件。
 //
 
 #include "types.h"
@@ -14,52 +16,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
-
-// ---------- 任务一：Agent 进程 ----------
-
-// sys_agent_create(type, interval, quota) -> pid | -1
-uint64
-sys_agent_create(void)
-{
-  return -1;
-}
-
-// sys_agent_info(pid, struct agent_info *) -> 0 | -1
-uint64
-sys_agent_info(void)
-{
-  return -1;
-}
-
-// ---------- 任务三：上下文路径管理 ----------
-
-// sys_context_push(data, len) -> 0 | 负错误码
-uint64
-sys_context_push(void)
-{
-  return -1;
-}
-
-// sys_context_query(idx, buf, buflen) -> 节点长度 | 负错误码
-uint64
-sys_context_query(void)
-{
-  return -1;
-}
-
-// sys_context_rollback(n) -> 0 | -1
-uint64
-sys_context_rollback(void)
-{
-  return -1;
-}
-
-// sys_context_clear() -> 0
-uint64
-sys_context_clear(void)
-{
-  return -1;
-}
+#include "agent_proto.h"
 
 // ---------- 任务五：Agent Loop 机制 ----------
 

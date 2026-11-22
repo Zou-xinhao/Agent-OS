@@ -61,3 +61,9 @@
 //   TRAPFRAME (p->trapframe, used by the trampoline)
 //   TRAMPOLINE (the same page as in the kernel)
 #define TRAPFRAME (TRAMPOLINE - PGSIZE)
+// Agent Context 区：固定落在 TRAPFRAME 下方，躲开堆与栈，
+// 这样 sbrk/exec 的既有布局一个字都不用改。
+#define AGENT_CTX_PAGES 16
+#define AGENT_CTX_SIZE  (AGENT_CTX_PAGES * PGSIZE)
+#define AGENT_CTX_BASE  (TRAPFRAME - AGENT_CTX_SIZE)
+

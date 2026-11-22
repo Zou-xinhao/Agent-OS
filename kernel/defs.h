@@ -58,6 +58,9 @@ void            ireclaim(int);
 
 // kalloc.c
 void*           kalloc(void);
+void*           kalloc_dirty(void);
+void*           kalloc_clean(void);
+uint64          kalloc_freepages(void);
 void            kfree(void *);
 void            kinit(void);
 
@@ -186,13 +189,20 @@ void            virtio_disk_intr(void);
 #define NELEM(x) (sizeof(x) / sizeof((x)[0]))
 
 // ---- Agent-OS 扩展（apply-stubs.py 生成）----
-// agent_ctx.c （任务一 / 三 / 五，负责人 A）
+// agent_mem.c （任务一 / 三 的机制，负责人 A）
 uint64 sys_agent_create(void);
 uint64 sys_agent_info(void);
 uint64 sys_context_push(void);
 uint64 sys_context_query(void);
 uint64 sys_context_rollback(void);
 uint64 sys_context_clear(void);
+void   agent_pcb_init(struct proc *p);
+int    agent_ctx_map(pagetable_t pagetable, uint64 base);
+int    agent_ctx_alloc(struct proc *p, pagetable_t pagetable);
+void   agent_ctx_reset(struct proc *p);
+void   agent_ctx_release(struct proc *p, pagetable_t pagetable);
+
+// agent_ctx.c （任务五，负责人 A / C）
 uint64 sys_agent_heartbeat_set(void);
 uint64 sys_agent_heartbeat_stop(void);
 uint64 sys_agent_watch(void);
