@@ -2,7 +2,7 @@
 #include "kernel/agent_proto.h"
 #include "user/user.h"
 
-// Small check that the Agent syscall entries still dispatch from user space.
+// 小检查：确认 Agent 系统调用入口仍能从用户态分发。
 int
 main(void)
 {

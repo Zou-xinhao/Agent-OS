@@ -25,8 +25,8 @@
 #define TOOL_SEND_MESSAGE      4
 #define TOOL_GET_SYSTEM_STATUS 5
 
-// Wire order: request header, argc agent_kv lengths, then each key/value
-// byte pair in that same order. Keys and values have no NUL terminator.
+// 线上顺序：请求头、argc 个 agent_kv 长度头，再按同样顺序排列各键/值
+// 字节对。键和值都不带 NUL 终止符。
 struct agent_req {
   uint16 magic;       // 必须等于 AGENT_MAGIC
   uint16 tool_id;     // 见上面的 TOOL_*

@@ -1,7 +1,7 @@
 #ifndef AGENT_ABI_H
 #define AGENT_ABI_H
 
-// Shared with user programs. Include kernel/types.h first.
+// 与用户程序共享；包含本文件前先包含 kernel/types.h。
 #define AGENT_TYPE_NORMAL 0
 #define AGENT_TYPE_AGENT  1
 #define AGENT_LOOP_IDLE   0
@@ -45,11 +45,11 @@ struct agent_proc_row {
   char name[16];
 };
 
-// Process query returns a packed array of agent_proc_row. Its length is
-// given by the response header; an empty query result is valid.
+// 进程查询返回紧凑排列的 agent_proc_row 数组，其长度由应答头给出；
+// 查询结果为空是合法的。
 struct agent_system_status {
   uint32 uptime_ticks;
-  uint32 processes[AGENT_PROC_STATE_COUNT]; // element 0 is reserved
+  uint32 processes[AGENT_PROC_STATE_COUNT]; // 元素 0 保留
 };
 
 #endif

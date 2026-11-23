@@ -204,7 +204,7 @@ execute_tool(struct proc *p, uint64 addr, int len, char **scratch,
     *data_len = query_process(&args, (struct agent_proc_row *)data);
     break;
   case TOOL_READ_CONTEXT: {
-    // The wire data starts 12 bytes into the page. Use an aligned local.
+    // 线上数据从页内偏移 12 字节处开始，故改用对齐的局部变量。
     struct agent_record record;
     int result = agent_read_record(args.index, &record);
     if (result < 0)

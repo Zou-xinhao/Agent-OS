@@ -60,7 +60,7 @@ record_addr(struct proc *p, uint slot)
   return p->agent.context_base + slot * sizeof(struct agent_record);
 }
 
-// 确保 va 所在页已映射；顺带把同批的 4 页一起提交（写满一批再提交一次）。
+// 确保 va 所在页已映射；顺带把同批的 4 页一起提交（首次触碰该批即整批映射）。
 // 返回 0 表示 va 所在页可用；-1 表示配额或物理内存不足。
 // 调用者需持有 p->lock（只影响本进程页表，且不会睡眠）。
 static int

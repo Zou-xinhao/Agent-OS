@@ -7,21 +7,21 @@
 #include "syscall.h"
 #include "defs.h"
 
-// Fetch the uint64 at addr from the current process.
+// 从当前进程读取 addr 处的 uint64 值。
 int
 fetchaddr(uint64 addr, uint64 *ip)
 {
   struct proc *p = myproc();
   if (addr >= p->sz ||
-      addr + sizeof(uint64) > p->sz) // both tests needed, in case of overflow
+      addr + sizeof(uint64) > p->sz) // 两个判断都需要，以防溢出
     return -1;
   if (copyin(p->pagetable, p->sz, (char *)ip, addr, sizeof(*ip)) != 0)
     return -1;
   return 0;
 }
 
-// Fetch the nul-terminated string at addr from the current process.
-// Returns length of string, not including nul, or -1 for error.
+// 从当前进程读取 addr 处以 nul 结尾的字符串。
+// 返回字符串长度（不含 nul），出错返回 -1。
 int
 fetchstr(uint64 addr, char *buf, int max)
 {
@@ -53,25 +53,25 @@ argraw(int n)
   return -1;
 }
 
-// Fetch the nth 32-bit system call argument.
+// 读取第 n 个 32 位系统调用参数。
 void
 argint(int n, int *ip)
 {
   *ip = argraw(n);
 }
 
-// Retrieve an argument as a pointer.
-// Doesn't check for legality, since
-// copyin/copyout will do that.
+// 把参数当作指针取出。
+// 不检查其合法性，因为
+// copyin/copyout 会做这项检查。
 void
 argaddr(int n, uint64 *ip)
 {
   *ip = argraw(n);
 }
 
-// Fetch the nth word-sized system call argument as a null-terminated string.
-// Copies into buf, at most max.
-// Returns string length if OK (not including nul), -1 if error.
+// 读取第 n 个机器字长的系统调用参数，将其作为以 null 结尾的字符串。
+// 复制到 buf，最多 max 字节。
+// 成功时返回字符串长度（不含 nul），出错返回 -1。
 int
 argstr(int n, char *buf, int max)
 {
@@ -80,7 +80,7 @@ argstr(int n, char *buf, int max)
   return fetchstr(addr, buf, max);
 }
 
-// Prototypes for the functions that handle system calls.
+// 处理系统调用的各函数的原型声明。
 extern uint64 sys_fork(void);
 extern uint64 sys_exit(void);
 extern uint64 sys_wait(void);
@@ -122,8 +122,8 @@ extern uint64 sys_file_setattr(void);
 extern uint64 sys_file_getattr(void);
 extern uint64 sys_file_query(void);
 
-// An array mapping syscall numbers from syscall.h
-// to the function that handles the system call.
+// 把 syscall.h 中的系统调用号映射到
+// 处理该系统调用的函数的数组。
 static uint64 (*syscalls[])(void) = {
   // clang-format off
   [SYS_fork]    = sys_fork,
@@ -175,8 +175,8 @@ syscall(void)
 
   num = p->trapframe->a7;
   if (num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    // Use num to lookup the system call function for num, call it,
-    // and store its return value in p->trapframe->a0
+    // 用 num 查出处理 num 的系统调用函数，调用它，
+    // 并把返回值存入 p->trapframe->a0
     p->trapframe->a0 = syscalls[num]();
   } else {
     printk("%d %s: unknown sys call %d\n", p->pid, p->name, num);

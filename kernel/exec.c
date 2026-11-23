@@ -9,7 +9,7 @@
 
 static int loadseg(pde_t *, uint64, struct inode *, uint, uint);
 
-// map ELF permissions to PTE permission bits.
+// 把 ELF 权限位映射为 PTE 权限位。
 int
 flags2perm(int flags)
 {
@@ -22,7 +22,7 @@ flags2perm(int flags)
 }
 
 //
-// the implementation of the exec() system call
+// exec() 系统调用的实现
 //
 int
 kexec(char *path, char **argv)
@@ -38,25 +38,25 @@ kexec(char *path, char **argv)
 
   begin_op();
 
-  // Open the executable file.
+  // 打开可执行文件。
   if ((ip = namei(path)) == 0) {
     end_op();
     return -1;
   }
   ilock(ip);
 
-  // Read the ELF header.
+  // 读取 ELF 头。
   if (readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
     goto bad;
 
-  // Is this really an ELF file?
+  // 这真的是一个 ELF 文件吗？
   if (elf.magic != ELF_MAGIC)
     goto bad;
 
   if ((pagetable = proc_pagetable(p)) == 0)
     goto bad;
 
-  // Load program into memory.
+  // 把程序装载进内存。
   for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
     if (readi(ip, 0, (uint64)&ph, off, sizeof(ph)) != sizeof(ph))
       goto bad;
@@ -83,9 +83,9 @@ kexec(char *path, char **argv)
   p = myproc();
   uint64 oldsz = p->sz;
 
-  // Allocate some pages at the next page boundary.
-  // Make the first inaccessible as a stack guard.
-  // Use the rest as the user stack.
+  // 在下一个页边界处分配若干页。
+  // 把第一页设为不可访问，充当栈保护页(guard page)。
+  // 其余的用作用户栈。
   sz = PGROUNDUP(sz);
   uint64 sz1;
   if ((sz1 = uvmalloc(pagetable, sz, sz + (USERSTACK + 1) * PGSIZE, PTE_W)) ==
@@ -96,11 +96,11 @@ kexec(char *path, char **argv)
   sp = sz;
   stackbase = sp - USERSTACK * PGSIZE;
 
-  // Copy argument strings into new stack, remember their
-  // addresses in ustack[].
+  // 把参数字符串复制到新栈上，并在 ustack[] 中
+  // 记住它们的地址。
   for (argc = 0; argv[argc]; argc++) {
     sp -= strlen(argv[argc]) + 1;
-    sp -= sp % 16; // riscv sp must be 16-byte aligned
+    sp -= sp % 16; // riscv sp 必须 16 字节对齐
     if (sp < stackbase)
       goto bad;
     if (copyout(pagetable, sz, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
@@ -109,7 +109,7 @@ kexec(char *path, char **argv)
   }
   ustack[argc] = 0;
 
-  // push a copy of ustack[], the array of argv[] pointers.
+  // 压入 ustack[] 的一份副本，即 argv[] 指针数组。
   sp -= (argc + 1) * sizeof(uint64);
   sp -= sp % 16;
   if (sp < stackbase)
@@ -118,16 +118,16 @@ kexec(char *path, char **argv)
       0)
     goto bad;
 
-  // a0 and a1 contain arguments to user main(argc, argv)
-  // argc is returned via the system call return
-  // value, which goes in a0.
+  // a0 和 a1 存放传给用户 main(argc, argv) 的参数，
+  // argc 通过系统调用的返回值传出，
+  // 该返回值放在 a0 中。
   p->trapframe->a1 = sp;
 
-  // Save program name for debugging.
+  // 保存程序名，供调试使用。
   for (last = s = path; *s; s++)
     if (*s == '/')
       last = s + 1;
-  // Commit to the user image and retire the old Agent mapping.
+  // 提交到新的用户映像，并注销旧的 Agent 映射。
   acquire(&p->lock);
   safestrcpy(p->name, last, sizeof(p->name));
   oldpagetable = p->pagetable;
@@ -135,12 +135,12 @@ kexec(char *path, char **argv)
     proc_drop_agent(p, oldpagetable);
   p->pagetable = pagetable;
   p->sz = sz;
-  p->trapframe->epc = elf.entry; // initial program counter = ulib.c:start()
-  p->trapframe->sp = sp;         // initial stack pointer
+  p->trapframe->epc = elf.entry; // 初始程序计数器 = ulib.c:start()
+  p->trapframe->sp = sp;         // 初始栈指针
   release(&p->lock);
   proc_freepagetable(oldpagetable, oldsz);
 
-  return argc; // this ends up in a0, the first argument to main(argc, argv)
+  return argc; // 该值最终进入 a0，即 main(argc, argv) 的第一个参数
 
 bad:
   if (pagetable)
@@ -152,10 +152,10 @@ bad:
   return -1;
 }
 
-// Load an ELF program segment into pagetable at virtual address va.
-// va must be page-aligned
-// and the pages from va to va+sz must already be mapped.
-// Returns 0 on success, -1 on failure.
+// 把 ELF 程序段装载到 pagetable 中虚拟地址 va 处。
+// va 必须页对齐，
+// 且从 va 到 va+sz 的页必须已经映射。
+// 成功返回 0，失败返回 -1。
 static int
 loadseg(pagetable_t pagetable, uint64 va, struct inode *ip, uint offset,
         uint sz)

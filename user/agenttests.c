@@ -294,7 +294,7 @@ main(int argc, char **argv)
   wait_ok(pid);
   CHECK(agent_info(pid, &info) == -1);
 
-  // Each create/exit cycle must reclaim its full Context reservation.
+  // 每个 create/exit 循环都必须完整回收其上下文(Context)预留。
   for (int i = 0; i < 2048; i++) {
     pid = agent_create(AGENT_TYPE_AGENT, 0, AGENT_MAX_QUOTA);
     CHECK(pid >= 0);
