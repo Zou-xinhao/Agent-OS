@@ -61,3 +61,7 @@
 //   TRAPFRAME (p->trapframe, used by the trampoline)
 //   TRAMPOLINE (the same page as in the kernel)
 #define TRAPFRAME (TRAMPOLINE - PGSIZE)
+
+// Fixed high mapping for an Agent only. Keep one page below it unmapped.
+#define AGENT_CONTEXT_BASE (TRAPFRAME - AGENT_MAX_QUOTA)
+#define AGENT_HEAP_LIMIT   (AGENT_CONTEXT_BASE - PGSIZE)

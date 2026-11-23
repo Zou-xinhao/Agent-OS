@@ -127,14 +127,17 @@ kexec(char *path, char **argv)
   for (last = s = path; *s; s++)
     if (*s == '/')
       last = s + 1;
+  // Commit to the user image and retire the old Agent mapping.
+  acquire(&p->lock);
   safestrcpy(p->name, last, sizeof(p->name));
-
-  // Commit to the user image.
   oldpagetable = p->pagetable;
+  if (p->agent.type == AGENT_TYPE_AGENT)
+    proc_drop_agent(p, oldpagetable);
   p->pagetable = pagetable;
   p->sz = sz;
   p->trapframe->epc = elf.entry; // initial program counter = ulib.c:start()
   p->trapframe->sp = sp;         // initial stack pointer
+  release(&p->lock);
   proc_freepagetable(oldpagetable, oldsz);
 
   return argc; // this ends up in a0, the first argument to main(argc, argv)

@@ -158,8 +158,10 @@ freeproc(struct proc *p)
   if (p->trapframe)
     kfree((void *)p->trapframe);
   p->trapframe = 0;
-  if (p->pagetable)
+  if (p->pagetable) {
+    proc_drop_agent(p, p->pagetable);
     proc_freepagetable(p->pagetable, p->sz);
+  }
   p->pagetable = 0;
   p->sz = 0;
   p->pid = 0;
@@ -168,6 +170,48 @@ freeproc(struct proc *p)
   p->killed = 0;
   p->xstate = 0;
   p->state = UNUSED;
+}
+
+// Caller holds p->lock. On exec, pagetable is the old user page table.
+void
+proc_drop_agent(struct proc *p, pagetable_t pagetable)
+{
+  if (p->agent.quota != 0)
+    uvmunmap(pagetable, AGENT_CONTEXT_BASE, p->agent.quota / PGSIZE, 1);
+  memset(&p->agent, 0, sizeof(p->agent));
+  memset(p->agent_lengths, 0, sizeof(p->agent_lengths));
+}
+
+// Only called by the current process, which owns changes to its mapping.
+uint64
+proc_memlimit(struct proc *p)
+{
+  return p->agent.type == AGENT_TYPE_AGENT ? AGENT_HEAP_LIMIT : TRAPFRAME;
+}
+
+int
+agent_get_info(int pid, struct agent_info *out)
+{
+  struct proc *self = myproc();
+  int result = -1;
+
+  acquire(&wait_lock);
+  for (struct proc *p = proc; p < &proc[NPROC]; p++) {
+    if (p != self && p->parent != self)
+      continue;
+    acquire(&p->lock);
+    if (p->pid == pid && p->agent.type == AGENT_TYPE_AGENT) {
+      *out = p->agent;
+      if (p != self)
+        out->context_base = 0;
+      result = 0;
+      release(&p->lock);
+      break;
+    }
+    release(&p->lock);
+  }
+  release(&wait_lock);
+  return result;
 }
 
 // Create a user page table for a given process, with no user memory,
@@ -240,7 +284,7 @@ growproc(int n)
 
   sz = p->sz;
   if (n > 0) {
-    if (sz + n > TRAPFRAME) {
+    if (sz + n > proc_memlimit(p)) {
       return -1;
     }
     if ((sz = uvmalloc(p->pagetable, sz, sz + n, PTE_W)) == 0) {
@@ -255,12 +299,15 @@ growproc(int n)
 
 // Create a new process, copying the parent.
 // Sets up child kernel stack to return as if from fork() system call.
-int
-kfork(void)
+static int
+forkproc(int type, int interval, uint64 quota)
 {
   int i, pid;
   struct proc *np;
   struct proc *p = myproc();
+
+  if (type == AGENT_TYPE_AGENT && p->sz > AGENT_HEAP_LIMIT)
+    return -1;
 
   // Allocate process.
   if ((np = allocproc()) == 0) {
@@ -274,6 +321,23 @@ kfork(void)
     return -1;
   }
   np->sz = p->sz;
+
+  if (type == AGENT_TYPE_AGENT) {
+    if (uvmalloc(np->pagetable, AGENT_CONTEXT_BASE, AGENT_CONTEXT_BASE + quota,
+                 PTE_W) == 0) {
+      freeproc(np);
+      release(&np->lock);
+      return -1;
+    }
+    np->agent = (struct agent_info){
+      .pid = np->pid,
+      .type = type,
+      .heartbeat_interval = interval,
+      .loop_state = AGENT_LOOP_IDLE,
+      .context_base = AGENT_CONTEXT_BASE,
+      .quota = quota,
+    };
+  }
 
   // copy saved user registers.
   *(np->trapframe) = *(p->trapframe);
@@ -302,6 +366,21 @@ kfork(void)
   release(&np->lock);
 
   return pid;
+}
+
+int
+kfork(void)
+{
+  return forkproc(AGENT_TYPE_NORMAL, 0, 0);
+}
+
+int
+kagent_fork(int type, int interval, uint64 quota)
+{
+  if (type != AGENT_TYPE_AGENT || interval < 0 || quota < PGSIZE ||
+      quota > AGENT_MAX_QUOTA || quota % PGSIZE != 0)
+    return -1;
+  return forkproc(type, interval, quota);
 }
 
 // Pass p's abandoned children to init.

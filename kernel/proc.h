@@ -1,3 +1,5 @@
+#include "agent_abi.h"
+
 // Saved registers for kernel context switches.
 struct context {
   uint64 ra;
@@ -83,11 +85,13 @@ struct proc {
   struct spinlock lock;
 
   // p->lock must be held when using these:
-  enum procstate state; // Process state
-  void *chan;           // If non-zero, sleeping on chan
-  int killed;           // If non-zero, have been killed
-  int xstate;           // Exit status to be returned to parent's wait
-  int pid;              // Process ID
+  enum procstate state;    // Process state
+  void *chan;              // If non-zero, sleeping on chan
+  int killed;              // If non-zero, have been killed
+  int xstate;              // Exit status to be returned to parent's wait
+  int pid;                 // Process ID
+  struct agent_info agent; // kernel-owned Agent metadata
+  uint16 agent_lengths[AGENT_CONTEXT_SLOTS];
 
   // wait_lock must be held when using this:
   struct proc *parent; // Parent process
