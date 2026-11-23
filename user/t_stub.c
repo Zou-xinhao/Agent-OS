@@ -1,31 +1,15 @@
-// 冒烟测试：验证新增的系统调用桩已经通到用户态
-// 全部返回负数（未实现）+ uptime 正常，就说明 ecall -> usertrap -> syscall() 分发 这条链路是通的。
 #include "kernel/types.h"
-#include "kernel/stat.h"
+#include "kernel/agent_proto.h"
 #include "user/user.h"
 
+// 小检查：确认 Agent 系统调用入口仍能从用户态分发。
 int
 main(void)
 {
-  int a, b, c, d;
-  uint t;
+  int ok = agent_create(0, 0, 4096) == -1 && tool_list(0, 0) == AGENT_E_ARG &&
+           context_clear() == AGENT_E_ARG &&
+           agent_heartbeat_stop() == AGENT_E_NOSYS;
 
-  a = agent_create(1, 10, 65536);
-  b = tool_list(0, 0);
-  c = context_clear();
-  d = agent_heartbeat_stop();
-  t = uptime();
-
-  printf("t_stub: agent_create    -> %d\n", a);
-  printf("t_stub: tool_list       -> %d\n", b);
-  printf("t_stub: context_clear   -> %d\n", c);
-  printf("t_stub: heartbeat_stop  -> %d\n", d);
-  printf("t_stub: uptime          -> %d\n", t);
-
-  if (a <= 0 && b <= 0 && c <= 0 && d <= 0 && t > 0)
-    printf("t_stub: PASS (pipeline ok)\n");
-  else
-    printf("t_stub: FAIL\n");
-
-  exit(0);
+  printf("t_stub: %s\n", ok ? "PASS" : "FAIL");
+  exit(ok ? 0 : 1);
 }

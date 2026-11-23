@@ -19,6 +19,8 @@ jobs:
           git diff --exit-code
       - name: Build kernel and fs.img
         run: make kernel/kernel fs.img
+      - name: Agent required tasks
+        run: ./test-xv6.py agenttests
       - name: usertests
         run: ./test-xv6.py usertests
       - name: crash tests

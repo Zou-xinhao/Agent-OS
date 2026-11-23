@@ -1,9 +1,9 @@
-// Physical memory allocator, for user processes,
-// kernel stacks, page-table pages,
-// and pipe buffers. Allocates whole 4096-byte pages.
+// 物理页分配器，服务于用户进程、
+// 内核栈、页表页
+// 以及管道缓冲区。按整页 4096 字节分配。
 //
 // Agent-OS 改造（模块 A：内存与地址空间）
-//   1) per-CPU 页缓存：热路径只碰本核的锁，批量（4 页）从全局链补货，
+//   1) 每核(per-CPU)缓存：热路径只碰本核的锁，批量（4 页）从全局空闲链表补货，
 //      缓存超过 64 页就回吐到 16 页。目的是把全局单锁的竞争从"每页一次"
 //      降到"每 4 页一次"，同时避免在锁里做长循环。
 //   2) clean / dirty 两条分配路径：
@@ -23,25 +23,25 @@
 
 void freerange(void *pa_start, void *pa_end);
 
-extern char end[]; // first address after kernel.
-                   // defined by kernel.ld.
+extern char end[]; // 内核结束后的第一个地址。
+                   // 由 kernel.ld 定义。
 
 struct run {
   struct run *next;
 };
 
-// 全局空闲页链：只在 per-CPU 缓存未命中（冷路径）或回吐时才被访问。
+// 全局空闲链表：只在每核缓存未命中（冷路径）或回吐时才被访问。
 struct {
   struct spinlock lock;
   struct run *freelist;
   uint64 npage;
 } kmem;
 
-#define KMEM_BATCH 4  // 一次从全局链取多少页
-#define KMEM_HIGH 64  // 本核缓存超过这个数就回吐
-#define KMEM_LOW 16   // 回吐到只剩这么多
+#define KMEM_BATCH 4  // 一次从全局空闲链表取多少页
+#define KMEM_HIGH  64 // 本核缓存超过这个数就回吐
+#define KMEM_LOW   16 // 回吐到只剩这么多
 
-// 每个 hart 一条私有链。kmemcpu[i] 只由 hart i 访问，锁仅用于打断抢占，
+// 每个 hart 一条私有链表。kmemcpu[i] 只由 hart i 访问，锁仅用于打断抢占，
 // 正常路径上几乎不会真正阻塞。
 struct kmem_cpu {
   struct spinlock lock;
@@ -51,7 +51,7 @@ struct kmem_cpu {
 
 struct kmem_cpu kmemcpu[NCPU];
 
-// 把本核缓存回吐到全局链。调用时不能持有 kc->lock 或 kmem.lock。
+// 把本核缓存回吐到全局空闲链表。调用时不能持有 kc->lock 或 kmem.lock。
 static void
 kmem_flush(int id)
 {
@@ -108,10 +108,10 @@ freerange(void *pa_start, void *pa_end)
     kfree(p);
 }
 
-// Free the page of physical memory pointed at by pa,
-// which normally should have been returned by a
-// call to kalloc().  (The exception is when
-// initializing the allocator; see kinit above.)
+// 释放 pa 指向的物理页，
+// 该页通常应当来自
+// kalloc() 的返回值。（例外是
+// 初始化分配器的时候；见上面的 kinit。）
 void
 kfree(void *pa)
 {
@@ -122,7 +122,7 @@ kfree(void *pa)
   if (((uint64)pa % PGSIZE) != 0 || (char *)pa < end || (uint64)pa >= PHYSTOP)
     panic("kfree");
 
-  // Fill with junk to catch dangling refs.
+  // 填入垃圾数据，以便捕获悬空引用。
   memset(pa, 1, PGSIZE);
 
   r = (struct run *)pa;
@@ -139,7 +139,7 @@ kfree(void *pa)
     kmem_flush(cpuid());
 }
 
-// 全局链空了：把其他核缓存里的页全部搬回全局链（留给自己核的由调用方处理）。
+// 全局空闲链表空了：排空其他核的缓存，把页全部搬回全局空闲链表（本核的留给调用方处理）。
 // 只在真正的"没货"路径上调用，所以不心疼锁开销。
 // 目的：让"分配失败"只发生在全系统真的没页的时候，而不是"本核缓存空了"。
 static void
@@ -206,7 +206,7 @@ kalloc_dirty(void)
     }
     release(&kc->lock);
 
-    // 本核缓存空：先从全局链批量补货
+    // 本核缓存空：先从全局空闲链表批量补货
     {
       struct run *batch[KMEM_BATCH];
       int n = 0;
@@ -234,7 +234,7 @@ kalloc_dirty(void)
       }
     }
 
-    // 全局也空了：把别的核藏着的页收回来再试一次（退化为"全局一致的空闲视图"）
+    // 全局也空了：把别的核藏着的页排空收回再试一次（退化为"全局一致的空闲视图"）
     kmem_drain_others(cpuid());
   }
 
@@ -251,9 +251,9 @@ kalloc_clean(void)
   return p;
 }
 
-// Allocate one 4096-byte page of physical memory.
-// Returns a pointer that the kernel can use.
-// Returns 0 if the memory cannot be allocated.
+// 分配一页 4096 字节的物理内存。
+// 返回内核可用的指针。
+// 内存无法分配时返回 0。
 // 保持 xv6 原语义：返回的页已清零。
 void *
 kalloc(void)
@@ -261,7 +261,7 @@ kalloc(void)
   return kalloc_clean();
 }
 
-// 当前空闲页总数（全局链 + 各核缓存）。观测用，不参与分配决策。
+// 当前空闲页总数（全局空闲链表 + 各核缓存）。观测用，不参与分配决策。
 uint64
 kalloc_freepages(void)
 {
