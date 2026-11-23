@@ -5,6 +5,7 @@
 #
 # ./test-xv6.py usertests  (runs usertests)
 # ./test-xv6.py -q usertests (runs the quick tests of usertests)
+# ./test-xv6.py agenttests (runs the proj61 required-task tests)
 # ./test-xv6.py crash  (runs the crash tests)
 # ./test-xv6.py log (runs the log crash test)
 
@@ -193,6 +194,17 @@ def test_crash():
     test_log()
     test_forphan()
     test_dorphan()
+
+def test_agenttests():
+    q = QEMU()
+    try:
+        q.cmd("agenttests\n")
+        q.monitor(r"^agenttests: (PASS|FAIL)", progress=r"^agenttests: round",
+                  timeout=90)
+        if not any(line.rstrip() == "agenttests: PASS" for line in q.lines()):
+            q.error(r"^agenttests: PASS$")
+    finally:
+        q.stop()
 
 def test_usertests(test=""):
     timeout = 600
