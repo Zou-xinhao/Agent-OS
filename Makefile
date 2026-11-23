@@ -153,7 +153,8 @@ UPROGS=\
 	$U/_forphan\
 	$U/_dorphan\
 	$U/_sync\
-  $U/_t_stub\
+	$U/_t_stub\
+	$U/_agenttests\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
