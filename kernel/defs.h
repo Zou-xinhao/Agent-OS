@@ -60,6 +60,9 @@ void            ireclaim(int);
 
 // kalloc.c
 void*           kalloc(void);
+void*           kalloc_dirty(void);
+void*           kalloc_clean(void);
+uint64          kalloc_freepages(void);
 void            kfree(void *);
 void            kinit(void);
 

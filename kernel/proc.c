@@ -323,12 +323,9 @@ forkproc(int type, int interval, uint64 quota)
   np->sz = p->sz;
 
   if (type == AGENT_TYPE_AGENT) {
-    if (uvmalloc(np->pagetable, AGENT_CONTEXT_BASE, AGENT_CONTEXT_BASE + quota,
-                 PTE_W) == 0) {
-      freeproc(np);
-      release(&np->lock);
-      return -1;
-    }
+    // 模块 A：Context 区改为"预留 + 惰性批量提交"，
+    // 不再在 fork 时一次性提交 quota（默认 16 页），
+    // 由 agent_ctx.c 的 ctx_commit() 在第一次 push 时按 4 页一批映射。
     np->agent = (struct agent_info){
       .pid = np->pid,
       .type = type,

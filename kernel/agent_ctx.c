@@ -10,6 +10,17 @@
 _Static_assert(sizeof(struct agent_record) == AGENT_CONTEXT_RECORD,
                "Agent Context record ABI");
 
+// 模块 A（内存与地址空间）移植要点：
+//   1) Context 区不再在 kagent_fork 时一次性 uvmalloc(quota)，
+//      改为"预留 + 惰性批量提交"：第一次写某个槽所在页时才映射，
+//      一次映射 4 页（16 KiB），与企划书 4.5 的方案一致。
+//   2) 页仍然给 PTE_W，因为 ABI 要求用户程序可以直接读自己的 Context 区
+//      （user/agenttests.c 会解引用 context_base），同时 copyout 写用户页
+//      在 vm.c 里也要求 PTE_W。
+//   3) 分配走 kalloc_clean()（per-CPU 缓存 + 清零语义），页表页同理。
+
+#define CTX_COMMIT_PAGES 4
+
 uint64
 sys_agent_create(void)
 {
@@ -49,8 +60,49 @@ record_addr(struct proc *p, uint slot)
   return p->agent.context_base + slot * sizeof(struct agent_record);
 }
 
-// Only the running process can change its record data. Other processes
-// may snapshot its metadata under p->lock, but cannot access its records.
+// 确保 va 所在页已映射；顺带把同批的 4 页一起提交（写满一批再提交一次）。
+// 返回 0 表示 va 所在页可用；-1 表示配额或物理内存不足。
+// 调用者需持有 p->lock（只影响本进程页表，且不会睡眠）。
+static int
+ctx_commit(struct proc *p, uint64 va)
+{
+  uint64 base = p->agent.context_base;
+  uint64 limit = base + p->agent.quota;
+  uint64 a = PGROUNDDOWN(va);
+  uint64 end;
+  int ok = 0;
+
+  if (va < base || va >= limit)
+    return -1;
+
+  end = a + CTX_COMMIT_PAGES * PGSIZE;
+  if (end > limit)
+    end = limit;
+
+  for (uint64 q = a; q < end; q += PGSIZE) {
+    pte_t *pte = walk(p->pagetable, q, 0);
+    char *mem;
+
+    if (pte && (*pte & PTE_V)) {
+      if (q == a)
+        ok = 1;
+      continue;
+    }
+    mem = kalloc_clean();
+    if (mem == 0)
+      break;
+    if (mappages(p->pagetable, q, PGSIZE, (uint64)mem,
+                 PTE_R | PTE_U | PTE_W) != 0) {
+      kfree(mem);
+      break;
+    }
+    if (q == a)
+      ok = 1;
+  }
+  return ok ? 0 : -1;
+}
+
+// 只允许当前进程改自己的记录；别的进程只能在 p->lock 下快照元数据。
 int
 agent_read_record(int index, struct agent_record *record)
 {
@@ -103,6 +155,10 @@ sys_context_push(void)
   acquire(&p->lock);
   capacity = context_capacity(p);
   slot = (p->agent.head + p->agent.count) % capacity;
+  if (ctx_commit(p, record_addr(p, slot)) < 0) {
+    release(&p->lock);
+    return AGENT_E_QUOTA;
+  }
   if (copyout(p->pagetable, p->sz, record_addr(p, slot), (char *)&record,
               sizeof(record)) < 0) {
     release(&p->lock);
