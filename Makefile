@@ -156,6 +156,7 @@ UPROGS=\
 	$U/_t_stub\
 	$U/_agenttests\
 	$U/_agent_demo\
+	$U/_agentsysadmin\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)
