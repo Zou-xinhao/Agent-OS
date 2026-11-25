@@ -250,14 +250,17 @@ sys_context_clear(void)
 uint64
 sys_agent_heartbeat_set(void)
 {
-  return AGENT_E_NOSYS;
+  int interval;
+
+  argint(0, &interval);
+  return interval > 0 ? agent_heartbeat_configure(interval) : -1;
 }
 
 // sys_agent_heartbeat_stop() -> 0
 uint64
 sys_agent_heartbeat_stop(void)
 {
-  return AGENT_E_NOSYS;
+  return agent_heartbeat_configure(0);
 }
 
 // sys_agent_watch(event_id) -> watch_id | -1
@@ -271,7 +274,10 @@ sys_agent_watch(void)
 uint64
 sys_agent_wait(void)
 {
-  return AGENT_E_NOSYS;
+  int timeout;
+
+  argint(0, &timeout);
+  return agent_wait_event(timeout);
 }
 
 // sys_agent_unwatch(watch_id) -> 0 | -1

@@ -7,8 +7,7 @@ int
 main(void)
 {
   int ok = agent_create(0, 0, 4096) == -1 && tool_list(0, 0) == AGENT_E_ARG &&
-           context_clear() == AGENT_E_ARG &&
-           agent_heartbeat_stop() == AGENT_E_NOSYS;
+           context_clear() == AGENT_E_ARG && agent_heartbeat_stop() == -1;
 
   printf("t_stub: %s\n", ok ? "PASS" : "FAIL");
   exit(ok ? 0 : 1);

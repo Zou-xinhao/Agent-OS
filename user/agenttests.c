@@ -225,6 +225,74 @@ check_fifo_and_isolation(void)
 }
 
 static void
+check_heartbeat(void)
+{
+  int status;
+  uint started;
+
+  CHECK(agent_wait(-2) == -1);
+  CHECK(agent_heartbeat_set(0) == -1 && agent_heartbeat_set(-1) == -1);
+  CHECK(agent_wait(20) == AGENT_EVENT_HEARTBEAT); // agent_create 的初始周期
+
+  CHECK(agent_heartbeat_set(2) == 0);
+  CHECK(pause(3) == 0);
+  CHECK(agent_wait(0) == AGENT_EVENT_HEARTBEAT); // 心跳先于等待到达
+  CHECK(pause(3) == 0);
+  CHECK(agent_heartbeat_set(40) == 0);
+  CHECK(self_info().heartbeat_interval == 40);
+  CHECK(agent_wait(0) == -1); // 调频清除旧周期的待处理事件
+  CHECK(agent_wait(2) == -1);
+  CHECK(agent_heartbeat_set(2) == 0);
+  CHECK(agent_wait(8) == AGENT_EVENT_HEARTBEAT); // 调整为更短周期
+  CHECK(agent_wait(AGENT_WAIT_FOREVER) == AGENT_EVENT_HEARTBEAT);
+  CHECK(agent_heartbeat_set(3) == 0);
+  CHECK(agent_wait(3) == AGENT_EVENT_HEARTBEAT); // 同 tick 心跳优先
+  CHECK(self_info().loop_state == AGENT_LOOP_IDLE);
+
+  CHECK(pause(3) == 0);
+  CHECK(agent_heartbeat_stop() == 0 && agent_heartbeat_stop() == 0);
+  CHECK(self_info().heartbeat_interval == 0);
+  CHECK(agent_wait(0) == -1);
+  started = uptime();
+  CHECK(agent_wait(3) == -1);
+  CHECK((uint)uptime() - started >= 3);
+  CHECK(self_info().loop_state == AGENT_LOOP_IDLE);
+
+  int pid = agent_create(AGENT_TYPE_AGENT, 0, TEST_PAGE);
+  CHECK(pid >= 0);
+  if (pid == 0) {
+    agent_wait(AGENT_WAIT_FOREVER);
+    exit(42); // 未启用心跳，正常情况下不会返回用户态
+  }
+
+  struct agent_info child;
+  int waiting = 0;
+  for (int i = 0; i < 20; i++) {
+    CHECK(agent_info(pid, &child) == 0);
+    if (child.loop_state == AGENT_LOOP_WAITING) {
+      waiting = 1;
+      break;
+    }
+    CHECK(pause(1) == 0);
+  }
+  CHECK(waiting);
+
+  CHECK(call(TOOL_QUERY_PROCESS, "status", "sleeping", "type", "agent",
+             sizeof(reply)) == AGENT_OK);
+  int found = 0;
+  for (uint i = 0; i < reply.header.data_len;
+       i += sizeof(struct agent_proc_row)) {
+    struct agent_proc_row row;
+    memmove(&row, reply.data + i, sizeof(row));
+    found |= row.pid == pid && row.state == AGENT_PROC_SLEEPING;
+  }
+  CHECK(found);
+  CHECK(kill(pid) == 0);
+  CHECK(wait(&status) == pid && status == -1);
+  printf("agenttests: heartbeat PASS (set, stop, sleep, timeout, kill)\n");
+}
+
+static void
 check_lifecycle(void)
 {
   char *heap = sbrk(0);
@@ -264,6 +332,8 @@ main(int argc, char **argv)
   }
 
   CHECK(agent_info(getpid(), &info) == -1);
+  CHECK(agent_heartbeat_set(1) == -1 && agent_heartbeat_stop() == -1);
+  CHECK(agent_wait(0) == -1);
   CHECK(agent_create(0, 0, TEST_PAGE) == -1);
   CHECK(agent_create(AGENT_TYPE_AGENT, -1, TEST_PAGE) == -1);
   CHECK(agent_create(AGENT_TYPE_AGENT, 0, TEST_PAGE - 1) == -1);
@@ -283,6 +353,7 @@ main(int argc, char **argv)
     check_tools_and_loop();
     check_errors();
     check_fifo_and_isolation();
+    check_heartbeat();
     check_lifecycle();
     exit(1);
   }

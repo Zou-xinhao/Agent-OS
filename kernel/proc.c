@@ -180,6 +180,7 @@ proc_drop_agent(struct proc *p, pagetable_t pagetable)
     uvmunmap(pagetable, AGENT_CONTEXT_BASE, p->agent.quota / PGSIZE, 1);
   memset(&p->agent, 0, sizeof(p->agent));
   memset(p->agent_lengths, 0, sizeof(p->agent_lengths));
+  memset(&p->agent_timing, 0, sizeof(p->agent_timing));
 }
 
 // 只由当前进程调用，该进程拥有对其映射的修改权。
@@ -358,9 +359,15 @@ forkproc(int type, int interval, uint64 quota)
   np->parent = p;
   release(&wait_lock);
 
+  if (interval > 0)
+    acquire(&tickslock);
   acquire(&np->lock);
+  if (interval > 0)
+    np->agent_timing.heartbeat_tick = ticks;
   np->state = RUNNABLE;
   release(&np->lock);
+  if (interval > 0)
+    release(&tickslock);
 
   return pid;
 }
@@ -664,6 +671,103 @@ wakeup(void *chan)
       // 还要把它重新置为 RUNNING。
       if (p->state == SLEEPING) {
         p->state = RUNNABLE;
+      }
+    }
+    release(&p->lock);
+  }
+}
+
+// 计时路径统一先拿 tickslock，再拿 p->lock。
+int
+agent_heartbeat_configure(int interval)
+{
+  struct proc *p = myproc();
+
+  acquire(&tickslock);
+  acquire(&p->lock);
+  if (p->agent.type != AGENT_TYPE_AGENT) {
+    release(&p->lock);
+    release(&tickslock);
+    return -1;
+  }
+  p->agent.heartbeat_interval = interval;
+  p->agent_timing.heartbeat_tick = ticks;
+  p->agent_timing.heartbeat_pending = 0;
+  release(&p->lock);
+  release(&tickslock);
+  return 0;
+}
+
+int
+agent_wait_event(int timeout)
+{
+  struct proc *p = myproc();
+  struct agent_timing *timing = &p->agent_timing;
+  int result = -1;
+
+  if (timeout < AGENT_WAIT_FOREVER)
+    return -1;
+  acquire(&tickslock);
+  acquire(&p->lock);
+  if (p->agent.type != AGENT_TYPE_AGENT || p->killed) {
+    release(&p->lock);
+    release(&tickslock);
+    return -1;
+  }
+  if (timing->heartbeat_pending) {
+    timing->heartbeat_pending = 0;
+    result = AGENT_EVENT_HEARTBEAT;
+  } else if (timeout != 0) {
+    timing->wait_tick = ticks;
+    timing->wait_timeout = timeout;
+    timing->wait_result = -1;
+    p->chan = timing;
+    p->agent.loop_state = AGENT_LOOP_WAITING;
+    p->state = SLEEPING;
+
+    // 检查待处理事件、登记通道和进入 SLEEPING 都持有 p->lock。
+    // sched 只允许持有进程锁。定时器随后可取得该锁并定向唤醒。
+    release(&tickslock);
+    sched();
+
+    result = p->killed ? -1 : timing->wait_result;
+    p->chan = 0;
+    p->agent.loop_state = AGENT_LOOP_IDLE;
+    timing->wait_timeout = 0;
+    release(&p->lock);
+    return result;
+  }
+  release(&p->lock);
+  release(&tickslock);
+  return result;
+}
+
+// 只有 hart 0 持有 tickslock 并推进全局时钟时调用。
+void
+agent_clock_tick(uint now)
+{
+  for (struct proc *p = proc; p < &proc[NPROC]; p++) {
+    acquire(&p->lock);
+    if (p->state != UNUSED && p->state != USED && p->state != ZOMBIE &&
+        p->agent.type == AGENT_TYPE_AGENT && !p->killed) {
+      struct agent_timing *timing = &p->agent_timing;
+      uint interval = p->agent.heartbeat_interval;
+      uint elapsed = now - timing->heartbeat_tick;
+
+      if (interval != 0 && elapsed >= interval) {
+        // 保持周期相位。等待者来不及消费的多次心跳合并为一次。
+        timing->heartbeat_tick += (elapsed / interval) * interval;
+        timing->heartbeat_pending = 1;
+      }
+      if (p->state == SLEEPING && p->chan == timing) {
+        if (timing->heartbeat_pending) {
+          timing->heartbeat_pending = 0;
+          timing->wait_result = AGENT_EVENT_HEARTBEAT;
+          p->state = RUNNABLE;
+        } else if (timing->wait_timeout > 0 &&
+                   now - timing->wait_tick >= (uint)timing->wait_timeout) {
+          p->state = RUNNABLE;
+        }
       }
     }
     release(&p->lock);

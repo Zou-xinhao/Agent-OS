@@ -80,6 +80,15 @@ struct trapframe {
 
 enum procstate { UNUSED, USED, SLEEPING, RUNNABLE, RUNNING, ZOMBIE };
 
+// 独立于用户态 ABI。所有字段由所属进程的 p->lock 保护。
+struct agent_timing {
+  uint heartbeat_tick; // 最近一次心跳的计划时刻
+  uint wait_tick;      // 本次等待开始的时刻
+  int wait_timeout;
+  int wait_result;
+  int heartbeat_pending;
+};
+
 // 每进程状态
 struct proc {
   struct spinlock lock;
@@ -92,6 +101,7 @@ struct proc {
   int pid;                 // 进程 ID
   struct agent_info agent; // 内核持有的 Agent 元数据
   uint16 agent_lengths[AGENT_CONTEXT_SLOTS];
+  struct agent_timing agent_timing;
 
   // 使用该字段时必须持有 wait_lock：
   struct proc *parent; // 父进程

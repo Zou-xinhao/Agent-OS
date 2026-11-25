@@ -2,9 +2,13 @@
 #define AGENT_ABI_H
 
 // 与用户程序共享；包含本文件前先包含 kernel/types.h。
-#define AGENT_TYPE_NORMAL 0
-#define AGENT_TYPE_AGENT  1
-#define AGENT_LOOP_IDLE   0
+#define AGENT_TYPE_NORMAL  0
+#define AGENT_TYPE_AGENT   1
+#define AGENT_LOOP_IDLE    0
+#define AGENT_LOOP_WAITING 1
+
+#define AGENT_EVENT_HEARTBEAT 1
+#define AGENT_WAIT_FOREVER    (-1)
 
 #define AGENT_MAX_QUOTA      65536
 #define AGENT_CONTEXT_RECORD 256
