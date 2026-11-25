@@ -2,8 +2,7 @@
 
 2026 全国大学生计算机系统能力大赛 · 操作系统设计赛 · 华北区域赛 · 功能挑战赛道 · 赛题 proj61
 
-在 xv6-riscv（rev5）之上扩展出 Agent 感知的内核能力：Agent 进程抽象、结构化工具调用协议、
-上下文路径管理、Agent Loop 运行机制，并以「Agent 系统管理员」场景做综合验证。
+在 xv6-riscv（rev5）上实现 Agent 进程、结构化工具调用和上下文路径。定时及事件驱动的 Agent Loop、文件属性扩展和「Agent 系统管理员」综合场景属于选做规划。
 
 > 一句话：让内核不仅能跑进程，还能"知道有个 Agent 在用工具、并且记得它刚才用过什么"。
 
@@ -43,7 +42,7 @@ bash scripts/check-env.sh          # 版本自检，三人输出必须一致
 ## 快速开始
 
 ```bash
-git clone https://github.com/<你们>/agent-os.git && cd agent-os
+# 从含有基础任务实现的检出目录运行
 make qemu          # 看到 "xv6 kernel is booting" 和 $ 提示符即成功
 ```
 
@@ -56,11 +55,16 @@ gdb-multiarch -x .gdbinit
 (gdb) c
 ```
 
-运行测试（C 负责维护）：
+基础任务的 QEMU 验收命令：
 
 ```bash
-make test
+make kernel/kernel fs.img
+./test-xv6.py agenttests  # 六轮结构化调用、上下文和进程生命周期
+./test-xv6.py usertests   # xv6 用户态回归测试
+./test-xv6.py crash       # 文件系统崩溃恢复测试
 ```
+
+也可运行 `make qemu`，在 xv6 shell 中输入 `agenttests`，看到六轮记录和 `agenttests: PASS`。从串行控制台退出 QEMU 用 Ctrl+A，再按 X。
 
 ---
 
@@ -69,9 +73,8 @@ make test
 ```
 kernel/       内核：proc/vm/trap/syscall/fs + 新增 agent_ctx.c agent_tool.c
 user/         用户态：shell、Agent 示例程序、测试程序
-docs/         设计文档、协作规范、周报
-scripts/      构建/测试/环境检查脚本
-demo/         每周 30 秒演示视频（解说视频素材）
+docs/         设计文档、协作规范
+scripts/      环境检查脚本
 mkfs/         文件系统镜像工具
 Makefile
 ```
@@ -87,9 +90,9 @@ Makefile
 | 任务三 上下文路径管理 | 基础 40% | `agent_ctx.c/ proc.c` | A |
 | 任务四 文件系统扩展（属性） | 进阶 35% | `fs.c/ sysfile.c`（加分项） | B |
 | 任务五 Agent Loop 机制 | 进阶 35% | `trap.c/ proc.c`（心跳 + 事件） | A |
-| 任务六 场景B Agent 系统管理员 | 综合 25% | `user/agentsysadmin.c` | C |
+| 任务六 场景B Agent 系统管理员 | 综合 25% | `user/agentsysadmin.c`（规划） | C |
 
-系统调用编号 22–37 见 `docs/接口约定.md`，**改动需三人确认**。
+原有 `sync` 使用系统调用编号 22，Agent 扩展使用 23–38。基础任务的用户态接口及数据布局见 [设计文档](docs/design.md)。调整共享接口前请按团队的协作规范协调。
 
 ---
 

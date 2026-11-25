@@ -25,7 +25,8 @@
 #define TOOL_SEND_MESSAGE      4
 #define TOOL_GET_SYSTEM_STATUS 5
 
-// 请求头：紧随其后是 argc 条 agent_kv（key 在前、value 在后，长度由 klen/vlen 给出）
+// 线上顺序：请求头、argc 个 agent_kv 长度头，再按同样顺序排列各键/值
+// 字节对。键和值都不带 NUL 终止符。
 struct agent_req {
   uint16 magic;       // 必须等于 AGENT_MAGIC
   uint16 tool_id;     // 见上面的 TOOL_*
@@ -46,22 +47,6 @@ struct agent_resp {
   uint16 reserved; // 0
   int status;      // AGENT_OK 或负错误码
   uint32 data_len;
-};
-
-// ---- [A] 内存与地址空间（任务一 / 三）：agent_info 的布局 ----
-// sys_agent_info(pid, &info) 一次拷回。字段顺序即 ABI，改动要通知 B/C。
-struct agent_info {
-  int type;               // Agent 类型，0 表示普通进程
-  int heartbeat_interval; // 心跳间隔（tick），0 表示未启用
-  uint64 quota;           // 上下文配额（字节）
-  uint64 base;            // Context 区起始用户虚拟地址
-  uint32 size;            // Context 区字节数
-  uint32 used;            // 已用字节
-  uint32 count;           // 节点个数
-  uint32 evictions;       // 累计淘汰节点数
-  int loop_state;         // enum agentloop
-  uint32 pad;             // 对齐填充
-  uint64 free_pages;      // 分配器当前空闲页（观测用）
 };
 
 #endif // AGENT_PROTO_H

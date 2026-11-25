@@ -5,6 +5,8 @@ struct file;
 struct inode;
 struct pipe;
 struct proc;
+struct agent_info;
+struct agent_record;
 struct spinlock;
 struct sleeplock;
 struct stat;
@@ -85,6 +87,12 @@ void            printkinit(void);
 int             cpuid(void);
 void            kexit(int);
 int             kfork(void);
+int             kagent_fork(int, int, uint64);
+int             agent_get_info(int, struct agent_info *);
+uint64          proc_memlimit(struct proc *);
+void            proc_drop_agent(struct proc *, pagetable_t);
+int             agent_read_record(int, struct agent_record *);
+uint64          agent_context_fault(struct proc *, uint64);
 int             growproc(int);
 void            proc_mapstacks(pagetable_t);
 pagetable_t     proc_pagetable(struct proc *);
@@ -185,24 +193,17 @@ void            virtio_disk_init(void);
 void            virtio_disk_rw(struct buf *, int);
 void            virtio_disk_intr(void);
 
-// number of elements in fixed-size array
+// 定长数组的元素个数
 #define NELEM(x) (sizeof(x) / sizeof((x)[0]))
 
 // ---- Agent-OS 扩展（apply-stubs.py 生成）----
-// agent_mem.c （任务一 / 三 的机制，负责人 A）
+// agent_ctx.c （任务一 / 三 / 五，负责人 A）
 uint64 sys_agent_create(void);
 uint64 sys_agent_info(void);
 uint64 sys_context_push(void);
 uint64 sys_context_query(void);
 uint64 sys_context_rollback(void);
 uint64 sys_context_clear(void);
-void   agent_pcb_init(struct proc *p);
-int    agent_ctx_map(pagetable_t pagetable, uint64 base);
-int    agent_ctx_alloc(struct proc *p, pagetable_t pagetable);
-void   agent_ctx_reset(struct proc *p);
-void   agent_ctx_release(struct proc *p, pagetable_t pagetable);
-
-// agent_ctx.c （任务五，负责人 A / C）
 uint64 sys_agent_heartbeat_set(void);
 uint64 sys_agent_heartbeat_stop(void);
 uint64 sys_agent_watch(void);

@@ -4,6 +4,7 @@
 #define USER_AGENT_H
 
 #include "kernel/types.h"
+#include "kernel/agent_abi.h"
 #include "kernel/agent_proto.h"
 
 #endif

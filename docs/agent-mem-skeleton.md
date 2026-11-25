@@ -1,4 +1,6 @@
-﻿# 模块 A 骨架落地说明（v1.0）
+# 模块 A 骨架落地说明（v1.0）
+
+> 历史资料：本文描述 GitLab MR !1 的早期骨架。集成版采用 fork 式 Agent 创建、统一的 agent_abi.h 和可直接读写的固定槽位 Context，保留后续移植的每核页缓存与惰性批量分配。当前复现命令与接口见 [设计文档](design.md)。
 
 > 分支：`feat/a-mem-skeleton`（基线 `dev` @ c8d82b1）
 > 范围：任务一（Agent 进程 + Context 区）+ 任务三的「配额 / 淘汰」机制
