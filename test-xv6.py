@@ -7,6 +7,7 @@
 # ./test-xv6.py -q usertests (runs the quick tests of usertests)
 # ./test-xv6.py agenttests (runs the proj61 required-task tests)
 # ./test-xv6.py agentdemo (runs the Agent Context demonstration)
+# ./test-xv6.py agentsysadmin (runs the one-shot Agent inspection demo)
 # ./test-xv6.py crash  (runs the crash tests)
 # ./test-xv6.py log (runs the log crash test)
 
@@ -214,6 +215,24 @@ def test_agentdemo():
         q.monitor(r"^agent_demo: (PASS|FAIL)", timeout=30)
         if not any(line.rstrip() == "agent_demo: PASS" for line in q.lines()):
             q.error(r"^agent_demo: PASS$")
+    finally:
+        q.stop()
+
+def test_agentsysadmin():
+    q = QEMU()
+    try:
+        q.cmd("agentsysadmin\n")
+        q.monitor(r"^agentsysadmin: (PASS|FAIL)",
+                  progress=r"^agentsysadmin: (status|worker=|history)", timeout=30)
+        lines = q.lines()
+        for expected in (
+            r"agentsysadmin: status running=[1-9][0-9]* sleeping=[0-9]+",
+            r"agentsysadmin: worker=ordinary/sleeping action=keep",
+            r"agentsysadmin: history index=1 matched",
+            r"agentsysadmin: PASS",
+        ):
+            if not any(re.fullmatch(expected, line) for line in lines):
+                q.error(expected)
     finally:
         q.stop()
 
